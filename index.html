@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#8fd8ff">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Latihan Matematika</title>
+<script>
+// Tema dipasang sebelum body digambar (tanpa kedip). Prioritas: ?tema=... > pilihan tersimpan > bawaan.
+(function () {
+  var T = { ceria: '#8fd8ff', teal: '#0d3b3c', night: '#2b1c78', sunset: '#4a1626', ocean: '#0a2a4a', paper: '#dff0ea' };
+  var t = (/[?&]tema=(\w+)/.exec(location.search) || [])[1];
+  try { if (!T[t]) t = localStorage.getItem('mb_tema'); } catch (e) {}
+  if (!T[t]) t = 'ceria';
+  var r = document.documentElement;
+  if (t !== 'ceria') r.setAttribute('data-theme', t);
+  window.__tema = { daftar: T, aktif: t };
+  // Papan angka di dalam aplikasi untuk layar sentuh (keyboard HP tidak menutupi soal). ?pad=0 mematikan, ?pad=1 memaksa.
+  var p = (/[?&]pad=(\d)/.exec(location.search) || [])[1];
+  var kp = p ? p === '1' : !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  window.__kp = kp;
+  if (kp) r.classList.add('kp');
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="stage" id="stage" data-state="idle">
+  <header class="head">
+    <div class="logorow">
+      <div class="logo">&#128640; Latihan Matematika</div>
+      <button type="button" class="koleksiBtn" id="koleksiBtn" aria-label="Koleksi stiker">&#11088; <b id="bintangN">0</b></button>
+      <button type="button" class="gear" id="gear" aria-label="Menu">&#9881;</button>
+    </div>
+    <div class="chips">
+      <span class="chip c-round" id="chipRound">Ronde &ndash;</span>
+      <span class="tab t-cat" id="tabCat" hidden></span>
+      <span class="tab t-misi" id="tabMisi" hidden></span>
+      <span class="tab t-lv" id="chipLevel">Level &ndash;</span>
+    </div>
+  </header>
+
+  <section class="goal">
+    <span class="skor" id="scoreTxt">Skor 0</span>
+    <div class="bar"><i id="stageFill"></i></div>
+    <span class="combo" id="comboTxt"></span>
+    <button type="button" class="peti" id="petiBtn" aria-label="Buka peti kejutan" hidden>&#127873;<b id="petiN"></b></button>
+  </section>
+
+  <section class="card" id="card">
+    <div class="mascot" id="mascot" aria-hidden="true">&#129418;</div>
+    <h1 id="title">Siap?</h1>
+    <p id="sub">Ketik jawabannya. Pelan-pelan saja, yang penting seru!</p>
+    <div class="misi" id="misi"></div>
+    <div class="qcap" id="qcap" hidden></div>
+    <div class="q" id="q" hidden></div>
+    <div class="boxes" id="boxes" hidden></div>
+    <p class="hasil" id="hasil" hidden></p>
+    <p class="petunjuk" id="petunjuk" hidden></p>
+    <form id="ansForm" autocomplete="off" hidden>
+      <input type="text" id="ans" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" maxlength="6" aria-label="Jawabanmu" placeholder="Ketik jawaban">
+      <button type="submit" id="okBtn">Cek</button>
+    </form>
+    <button type="button" class="skip" id="skipBtn" hidden>Lewati &#10140;</button>
+    <button type="button" class="big" id="btnMain">Main</button>
+    <div class="jeda" id="jeda" hidden>DIJEDA</div>
+  </section>
+
+  <section class="pad" id="pad" aria-label="Papan angka">
+    <button type="button" class="k" data-k="1">1</button>
+    <button type="button" class="k" data-k="2">2</button>
+    <button type="button" class="k" data-k="3">3</button>
+    <button type="button" class="k" data-k="4">4</button>
+    <button type="button" class="k" data-k="5">5</button>
+    <button type="button" class="k" data-k="6">6</button>
+    <button type="button" class="k" data-k="7">7</button>
+    <button type="button" class="k" data-k="8">8</button>
+    <button type="button" class="k" data-k="9">9</button>
+    <button type="button" class="k hapus" data-k="del" aria-label="Hapus">&#9003;</button>
+    <button type="button" class="k" data-k="0">0</button>
+    <button type="button" class="k cek" data-k="ok">Cek</button>
+  </section>
+
+  <section class="cols">
+    <div class="panel"><h2>Sesi ini</h2><ul id="sesi"></ul></div>
+    <div class="panel"><h2>Rekor kamu</h2><ul id="rekor"></ul></div>
+  </section>
+
+  <div class="foot"><span class="by" aria-label="angonrasa"><span>by</span> <b>angon</b><i>rasa</i></span></div>
+</main>
+
+<!-- Dialog hadiah (babak selesai, misi, peti) -->
+<div class="lapis" id="lapis" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
+
+<!-- Koleksi stiker -->
+<aside class="koleksi" id="koleksi" hidden>
+  <div class="kh"><h2>Koleksi stiker <span id="kJum"></span></h2><button type="button" id="kTutup" aria-label="Tutup">&#10005;</button></div>
+  <div class="kprog"><span id="kBintang"></span><div class="bar"><i id="kBar"></i></div><span id="kNext"></span></div>
+  <div class="kgrid" id="kGrid"></div>
+  <p class="kecil">Ketuk stiker yang sudah terbuka untuk dijadikan temanmu.</p>
+</aside>
+
+<!-- Ucapan selamat datang kembali (hari baru) -->
+<aside class="gcard" id="gcard" hidden>
+  <span id="gaAv"></span>
+  <div><div id="gaTx"></div><div id="gaSub"></div></div>
+</aside>
+
+<aside class="host" id="host" hidden>
+  <h3>Menu <button type="button" id="hTutup" aria-label="Tutup">&#10005;</button></h3>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="st" id="hStatus">Siap main</div>
+  <div class="row">
+    <button class="go" id="hMulai" type="button">Main</button>
+    <button class="stop" id="hStop" type="button">Berhenti</button>
+  </div>
+  <details id="dSetup" open><summary>Pengaturan</summary>
+    <label class="nm"><span>Nama</span><input type="text" id="hNama" maxlength="20" placeholder="Pemain" autocomplete="off" aria-label="Namamu"></label>
+    <p class="cat">Level naik satu tingkat setiap 5 soal. Pilih level yang sama di kedua kotak untuk berlatih satu topik saja (misalnya hanya Belanja &amp; Diskon).</p>
+    <div class="row lv">
+      <label>Dari <select id="hLevelMin" aria-label="Level terendah"><option value="1" selected>1 · Hitung Dasar</option><option value="2">2 · Hitung Campuran</option><option value="3">3 · FPB &amp; KPK</option><option value="4">4 · Pecahan, Desimal &amp; Persen</option><option value="5">5 · Satuan &amp; Pengukuran</option><option value="6">6 · Bangun Datar</option><option value="7">7 · Bangun Ruang</option><option value="8">8 · Belanja &amp; Diskon</option><option value="9">9 · Soal Cerita</option></select></label>
+    </div>
+    <div class="row lv">
+      <label>Sampai <select id="hLevelMaks" aria-label="Level tertinggi"><option value="1">1 · Hitung Dasar</option><option value="2">2 · Hitung Campuran</option><option value="3">3 · FPB &amp; KPK</option><option value="4">4 · Pecahan, Desimal &amp; Persen</option><option value="5">5 · Satuan &amp; Pengukuran</option><option value="6">6 · Bangun Datar</option><option value="7">7 · Bangun Ruang</option><option value="8">8 · Belanja &amp; Diskon</option><option value="9" selected>9 · Soal Cerita</option></select></label>
+    </div>
+    <div class="kecil">Tanpa timer, santai saja. Perubahan berlaku saat kamu menekan Main atau Ulangi.</div>
+  </details>
+  <details id="dTema"><summary>Warna tampilan</summary>
+    <div class="tema" id="hTema"></div>
+  </details>
+  <details id="dSuara"><summary>Suara</summary>
+    <div class="row">
+      <button id="sEfek" type="button" aria-pressed="true">Efek: NYALA</button>
+      <button id="sMusik" type="button" aria-pressed="true">Musik: NYALA</button>
+    </div>
+    <label class="sl"><span>Efek</span><input type="range" id="sVE" min="0" max="100" aria-label="volume efek"></label>
+    <label class="sl"><span>Musik</span><input type="range" id="sVM" min="0" max="100" aria-label="volume musik"></label>
+    <h4>Coba bunyinya</h4>
+    <div class="row coba" id="sCoba"></div>
+    <div class="kecil" id="sInfo"></div>
+  </details>
+  <div class="kecil">Membuka menu ini menjeda permainan.</div>
+</aside>
+
+<script src="suara.js"></script>
+<script src="engine.js"></script>
+<script src="hadiah.js"></script>
+<script src="solo.js"></script>
+</body>
+</html>
